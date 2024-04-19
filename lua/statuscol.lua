@@ -50,6 +50,7 @@ local function update_sign_defined(win, ext, reassign)
         s.text = s.sign_text
         if not idmap[s.ns_id] then update_nsidmap() end
         s.ns = idmap[s.ns_id]
+        if not s.ns then goto nextsign end
         if s.sign_hl_group then name = name..s.sign_hl_group end
       end
       s.wtext = s.text:gsub("%s", "")
