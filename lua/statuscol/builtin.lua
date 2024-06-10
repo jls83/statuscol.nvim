@@ -29,7 +29,7 @@ function M.lnumfunc(args, fa)
 end
 
 --- Return fold column in configured format.
-function M.foldfunc(args)
+function M.foldfunc_old(args)
   local width = args.fold.width
   if width == 0 then return "" end
 
@@ -61,6 +61,72 @@ function M.foldfunc(args)
   if range < width then string = string..(" "):rep(width - range) end
 
   return string.."%*"
+end
+
+--- Return fold column in configured format.
+function M.foldfunc(args)
+  local width = args.fold.width
+  if width == 0 then return "" end
+
+  local foldinfo = C.fold_info(args.wp, args.lnum)
+  local closed = foldinfo.lines > 0
+
+  local border_char = " "
+  -- local border_char = "⎹"
+  -- local border_char = "⎸"
+  -- local border_char = '│'
+  -- local border_char = "▕"
+  local res2 = {}
+
+  local hl_type
+  if args.cul and args.relnum == 0 then
+    hl_type = "CursorLineFold"
+  elseif closed then
+    hl_type = "OtherWeirdness"
+  else
+    hl_type = "FoldColumn"
+  end
+
+  table.insert(res2, "%#" .. hl_type .. "#")
+
+  local level = foldinfo.level
+
+  if level == 0 then
+    table.insert(res2, (" "):rep(width))
+    table.insert(res2, border_char .. "%*")
+    return table.concat(res2, "")
+  end
+
+  local cnum = closed and 1 or 0
+
+  local first_level = level - width - cnum + 1
+
+  if first_level < 1
+    then first_level = 1
+  end
+
+  -- For each column, add a foldopen, foldclosed, foldsep or padding char
+  local range = level < width and level or width
+  for col = 1, range do
+    local next_char
+    if args.virtnum ~= 0 then
+      next_char = args.fold.sep
+    elseif closed and (col == level or col == width) then
+      next_char = args.fold.close
+    elseif foldinfo.start == args.lnum and first_level + col > foldinfo.llevel then
+      next_char = args.fold.open
+    else
+      next_char = args.fold.sep
+    end
+    table.insert(res2, next_char)
+  end
+
+  if range < width then
+    table.insert(res2, (" "):rep(width - range))
+  end
+
+    table.insert(res2, border_char .. "%*")
+  return table.concat(res2, "")
 end
 
 --- Return sign column in configured format.
